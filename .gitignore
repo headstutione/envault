@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+htmlcov/
+.tox/
+develop-eggs/
+.env
+build/
+venv/
+*~
+.ruff_cache/
+Thumbs.db
+*.egg
+dist/
