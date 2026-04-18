@@ -51,3 +51,22 @@ def import_dotenv(vault_path: Path, password: str, input_path: Path) -> int:
             set_variable(vault_path, key, raw_value, password)
             count += 1
     return count
+
+
+def list_dotenv_keys(input_path: Path) -> list[str]:
+    """Return a sorted list of variable names found in a .env file without decrypting the vault.
+
+    Useful for previewing what would be imported before committing to the operation.
+    """
+    if not input_path.exists():
+        raise FileNotFoundError(f".env file not found: {input_path}")
+
+    keys = []
+    for line in input_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key = line.partition("=")[0].strip()
+        if key:
+            keys.append(key)
+    return sorted(keys)
