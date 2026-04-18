@@ -32,6 +32,12 @@ Add and encrypt an environment variable:
 envault set DATABASE_URL "postgres://user:pass@localhost/db"
 ```
 
+Remove an environment variable:
+
+```bash
+envault unset DATABASE_URL
+```
+
 Share encrypted variables with your team:
 
 ```bash
