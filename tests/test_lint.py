@@ -38,6 +38,15 @@ def test_lint_wrong_password(vault_file):
     issues = lint_vault(vault_file, 'wrongpass')
     assert any(i.level == 'error' for i in issues)
 
+def test_lint_multiple_issues(vault_file):
+    """Multiple keys with issues should each produce their own warning."""
+    set_variable(vault_file, 'bad-key', 'value', PASSWORD)
+    set_variable(vault_file, 'another.bad', '   ', PASSWORD)
+    issues = lint_vault(vault_file, PASSWORD)
+    warned_keys = {i.key for i in issues if i.level == 'warning'}
+    assert 'bad-key' in warned_keys
+    assert 'another.bad' in warned_keys
+
 def test_cli_lint_no_issues(vault_file):
     set_variable(vault_file, 'GOOD_KEY', 'goodvalue', PASSWORD)
     runner = CliRunner()
