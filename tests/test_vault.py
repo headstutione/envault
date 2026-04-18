@@ -67,3 +67,17 @@ def test_export_env_format():
     output = export_env(data)
     assert 'export DB_HOST="localhost"' in output
     assert 'export PORT="5432"' in output
+
+
+def test_export_env_empty_dict():
+    """export_env should return an empty string for an empty vault."""
+    output = export_env({})
+    assert output == ""
+
+
+def test_export_env_special_characters():
+    """export_env should handle values containing spaces and special chars."""
+    data = {"GREETING": "hello world", "PATH_EXTRA": "/usr/local/bin:/usr/bin"}
+    output = export_env(data)
+    assert 'export GREETING="hello world"' in output
+    assert 'export PATH_EXTRA="/usr/local/bin:/usr/bin"' in output
