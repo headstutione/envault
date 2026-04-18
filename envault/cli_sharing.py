@@ -19,8 +19,11 @@ def sharing():
 @click.option("--vault", default=str(DEFAULT_VAULT), show_default=True, help="Vault file path")
 def export_cmd(output: str, password: str, vault: str) -> None:
     """Export vault to an encrypted shareable bundle."""
+    vault_path = Path(vault)
+    if not vault_path.exists():
+        raise click.ClickException(f"Vault not found: {vault}")
     try:
-        export_bundle(Path(vault), password, Path(output))
+        export_bundle(vault_path, password, Path(output))
         click.echo(f"Bundle exported to {output}")
     except ValueError as exc:
         raise click.ClickException(str(exc))
