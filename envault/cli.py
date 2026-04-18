@@ -1,93 +1,78 @@
+"""Main CLI entry point for envault."""
 import click
 from pathlib import Path
-from envault.vault import load_vault, save_vault, set_variable, get_variable, delete_variable, list_variables
+from envault.vault import set_variable, get_variable, delete_variable, list_variables
 from envault.cli_sharing import sharing
+from envault.cli_audit import audit
+from envault.cli_rotation import rotation
+from envault.cli_search import search
+from envault.cli_backup import backup
+from envault.cli_tags import tags
 
-DEFAULT_VAULT = ".envault"
+DEFAULT_VAULT = Path(".envault")
 
 
 @click.group()
-@click.option("--vault", default=DEFAULT_VAULT, show_default=True, help="Path to vault file.")
-@click.pass_context
-def cli(ctx, vault):
-    """envault — manage and encrypt project environment variables."""
-    ctx.ensure_object(dict)
-    ctx.obj["vault"] = vault
+def cli():
+    """envault — encrypted environment variable manager."""
 
 
 @cli.command("set")
 @click.argument("key")
 @click.argument("value")
-@click.password_option(prompt="Vault password", help="Password to encrypt the vault.")
-@click.pass_context
-def set_cmd(ctx, key, value, password):
-    """Set an environment variable in the vault."""
-    vault_path = ctx.obj["vault"]
-    try:
-        set_variable(vault_path, key, value, password)
-        click.echo(f"Set '{key}' successfully.")
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
+@click.password_option("--password", prompt="Vault password")
+@click.option("--vault-file", default=str(DEFAULT_VAULT), show_default=True)
+def set_cmd(key, value, password, vault_file):
+    """Set an environment variable."""
+    set_variable(key, value, password, Path(vault_file))
+    click.echo(f"Set '{key}'.")
 
 
 @cli.command("get")
 @click.argument("key")
-@click.option("--password", prompt=True, hide_input=True, help="Vault password.")
-@click.pass_context
-def get_cmd(ctx, key, password):
-    """Get an environment variable from the vault."""
-    vault_path = ctx.obj["vault"]
-    try:
-        value = get_variable(vault_path, key, password)
-        if value is None:
-            click.echo(f"Key '{key}' not found.", err=True)
-            raise SystemExit(1)
+@click.option("--password", prompt="Vault password", hide_input=True)
+@click.option("--vault-file", default=str(DEFAULT_VAULT), show_default=True)
+def get_cmd(key, password, vault_file):
+    """Get an environment variable."""
+    value = get_variable(key, password, Path(vault_file))
+    if value is None:
+        click.echo(f"Key '{key}' not found.")
+    else:
         click.echo(value)
-    except SystemExit:
-        raise
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
 
 
 @cli.command("delete")
 @click.argument("key")
-@click.option("--password", prompt=True, hide_input=True, help="Vault password.")
-@click.pass_context
-def delete_cmd(ctx, key, password):
-    """Delete an environment variable from the vault."""
-    vault_path = ctx.obj["vault"]
-    try:
-        delete_variable(vault_path, key, password)
+@click.option("--password", prompt="Vault password", hide_input=True)
+@click.option("--vault-file", default=str(DEFAULT_VAULT), show_default=True)
+def delete_cmd(key, password, vault_file):
+    """Delete an environment variable."""
+    deleted = delete_variable(key, password, Path(vault_file))
+    if deleted:
         click.echo(f"Deleted '{key}'.")
-    except KeyError:
-        click.echo(f"Key '{key}' not found.", err=True)
-        raise SystemExit(1)
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
+    else:
+        click.echo(f"Key '{key}' not found.")
 
 
 @cli.command("list")
-@click.option("--password", prompt=True, hide_input=True, help="Vault password.")
-@click.pass_context
-def list_cmd(ctx, password):
-    """List all keys in the vault."""
-    vault_path = ctx.obj["vault"]
-    try:
-        keys = list_variables(vault_path, password)
-        if not keys:
-            click.echo("Vault is empty.")
-        else:
-            for key in keys:
-                click.echo(key)
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
+@click.option("--password", prompt="Vault password", hide_input=True)
+@click.option("--vault-file", default=str(DEFAULT_VAULT), show_default=True)
+def list_cmd(password, vault_file):
+    """List all variable keys."""
+    keys = list_variables(password, Path(vault_file))
+    if keys:
+        for k in keys:
+            click.echo(k)
+    else:
+        click.echo("No variables stored.")
 
 
-cli.add_command(sharing, name="sharing")
+cli.add_command(sharing)
+cli.add_command(audit)
+cli.add_command(rotation)
+cli.add_command(search)
+cli.add_command(backup)
+cli.add_command(tags)
 
 if __name__ == "__main__":
     cli()
