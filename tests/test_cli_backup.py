@@ -15,6 +15,15 @@ def runner():
     return CliRunner()
 
 
+@pytest.fixture()
+def vault_and_bdir(tmp_path):
+    """Create a vault file and backup directory for reuse across tests."""
+    vault = tmp_path / ".envault.json"
+    vault.write_text(json.dumps({"K": "v"}))
+    bdir = tmp_path / "bk"
+    return vault, bdir
+
+
 def test_create_command_succeeds(runner, tmp_path):
     vault = tmp_path / ".envault.json"
     vault.write_text(json.dumps({"A": "1"}))
@@ -63,6 +72,17 @@ def test_restore_command_succeeds(runner, tmp_path):
     )
     assert result.exit_code == 0
     assert "restored" in result.output
+
+
+def test_restore_preserves_content(runner, vault_and_bdir, tmp_path):
+    """Verify that restored vault file contains the original data."""
+    vault, bdir = vault_and_bdir
+    runner.invoke(backup, ["create", "--vault", str(vault), "--backup-dir", str(bdir)])
+    backup_file = sorted(bdir.glob("*.json"))[0]
+    new_vault = tmp_path / "restored.json"
+    runner.invoke(backup, ["restore", str(backup_file), "--vault", str(new_vault)])
+    assert new_vault.exists()
+    assert json.loads(new_vault.read_text()) == {"K": "v"}
 
 
 def test_prune_command(runner, tmp_path):
