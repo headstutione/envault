@@ -49,6 +49,21 @@ def test_clear_removes_key_history(runner, tmp_path):
     assert "API_KEY" not in data
 
 
+def test_clear_aborted_keeps_key_history(runner, tmp_path):
+    """Ensure that declining the confirmation prompt leaves history intact."""
+    hf = tmp_path / "history.json"
+    _write_history(hf, {
+        "API_KEY": [
+            {"timestamp": "2024-01-01T00:00:00", "action": "set", "user": "bob"}
+        ]
+    })
+    result = runner.invoke(history, ["clear", "API_KEY", "--history-file", str(hf)], input="n\n")
+    assert result.exit_code == 0
+    with open(hf) as f:
+        data = json.load(f)
+    assert "API_KEY" in data
+
+
 def test_list_keys_shows_all(runner, tmp_path):
     hf = tmp_path / "history.json"
     _write_history(hf, {
